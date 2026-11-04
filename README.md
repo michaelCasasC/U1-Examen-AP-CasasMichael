@@ -1,23 +1,17 @@
 # PrimeVideoDB CRUD
 
-Aplicación académica sobre la tabla `content` de `primevideodb`, con Node.js, Express, SQL Server, React, Vite, Socket.IO y `worker_threads`.
+Aplicación académica sobre la tabla `content` de `primevideodb`, con Node.js, Express, PostgreSQL local, React, Vite, Socket.IO y `worker_threads`.
 
-## 1. Iniciar SQL Server
+## 1. Verificar PostgreSQL
 
-Requiere Docker:
+Inicia el servicio local de PostgreSQL y asegúrate de que la base `primevideodb` y el usuario `primevideo_admin` existan.
 
-```powershell
-docker compose up -d
-```
-
-Ejecuta `database/PrimeVideoDB_SQLServer.sql` en SQL Server Management Studio, Azure Data Studio o `sqlcmd`. El script crea y carga `primevideodb`.
-
-Verifica la carga:
+En `psql` verifica la carga:
 
 ```sql
-USE primevideodb;
+\c primevideodb
 SELECT COUNT(*) AS total_content FROM content;
-SELECT TOP 10 * FROM content ORDER BY id;
+SELECT * FROM content LIMIT 10;
 ```
 
 ## 2. Iniciar backend
@@ -25,7 +19,11 @@ SELECT TOP 10 * FROM content ORDER BY id;
 ```powershell
 cd backend
 npm install
-$env:DB_PASSWORD="PrimeVideoDB_2026!"
+$env:DB_HOST="localhost"
+$env:DB_PORT="5432"
+$env:DB_NAME="primevideodb"
+$env:DB_USER="primevideo_admin"
+$env:DB_PASSWORD="<tu contraseña local>"
 npm run dev
 ```
 

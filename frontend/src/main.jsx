@@ -14,6 +14,8 @@ const App = () => {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState('');
+  const [statsLoading, setStatsLoading] = useState(false);
   const [notice, setNotice] = useState('Conectando al servidor...');
 
   const load = useCallback(async () => {
@@ -67,12 +69,22 @@ const App = () => {
   };
 
   const runStats = async () => {
-    const response = await fetch('/api/content/stats');
-    setStats(await response.json());
+    setStatsLoading(true);
+    setStatsError('');
+    try {
+      const response = await fetch('/api/content/stats');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'No se pudieron calcular las estadísticas');
+      setStats(result);
+    } catch (error) {
+      setStatsError(error.message);
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
   return <main>
-    <header><div><h1>PrimeVideoDB · Content</h1><p>{notice}</p></div><button onClick={runStats}>Calcular estadísticas</button></header>
+    <header><div><h1>PrimeVideoDB · Content</h1><p>{notice}</p></div><button onClick={runStats} disabled={statsLoading}>{statsLoading ? 'Calculando...' : 'Calcular estadísticas'}</button></header>
     <section><h2>{editingId ? 'Editar contenido' : 'Registrar contenido'}</h2><form onSubmit={submit}>
       <select value={form.content_type} onChange={(e) => setForm({ ...form, content_type: e.target.value })}><option>MOVIE</option><option>TV_SHOW</option><option>OTHER</option></select>
       <input placeholder="Título" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -83,7 +95,8 @@ const App = () => {
       <textarea placeholder="Descripción" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
       <button type="submit">{editingId ? 'Guardar cambios' : 'Registrar'}</button>{editingId && <button type="button" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancelar</button>}
     </form></section>
-    {stats && <section><h2>Estadísticas concurrentes</h2><p>Procesados en Worker Thread: <b>{stats.processed}</b></p><pre>{JSON.stringify(stats.byType, null, 2)}</pre></section>}
+    {statsError && <section><h2>Error de estadísticas</h2><p>{statsError}</p></section>}
+    {stats && <section><h2>Estadísticas concurrentes</h2><p>Procesados en Worker Thread: <b>{stats.processed}</b></p><table><thead><tr><th>Tipo</th><th>Total</th></tr></thead><tbody>{Object.entries(stats.byType || {}).map(([type, total]) => <tr key={type}><td>{type}</td><td>{total}</td></tr>)}</tbody></table></section>}
     <section><div className="list-header"><h2>Contenidos</h2><input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
       <table><thead><tr><th>ID</th><th>Tipo</th><th>Título</th><th>Año</th><th>Rating</th><th>Acciones</th></tr></thead><tbody>
         {contents.map((item) => <tr key={item.id}><td>{item.id}</td><td>{item.content_type}</td><td>{item.title}</td><td>{item.release_year || '-'}</td><td>{item.rating || '-'}</td><td><button onClick={() => edit(item)}>Editar</button> <button onClick={() => remove(item.id)}>Eliminar</button></td></tr>)}

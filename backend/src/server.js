@@ -3,7 +3,7 @@ import { Worker } from 'node:worker_threads';
 import { Server } from 'socket.io';
 import app from './app.js';
 import { env } from './config.js';
-import { getPool } from './db/pool.js';
+import { checkDatabase } from './db/pool.js';
 import { contentRepository } from './repositories/repository.js';
 
 const httpServer = createServer(app);
@@ -16,7 +16,9 @@ io.on('connection', (socket) => {
 app.locals.runStatistics = async () => {
   const records = await contentRepository.allForStatistics();
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./workers/statistics.worker.js', import.meta.url));
+    const worker = new Worker(new URL('./workers/statistics.worker.js', import.meta.url), {
+      execArgv: process.execArgv.filter((argument) => !argument.startsWith('--watch'))
+    });
     worker.once('message', (result) => {
       resolve({ ...result, concurrent: true });
       worker.terminate();
@@ -26,6 +28,6 @@ app.locals.runStatistics = async () => {
   });
 };
 
-getPool()
+checkDatabase()
   .then(() => httpServer.listen(env.port, '0.0.0.0', () => console.log(`PrimeVideoDB API listening on ${env.port}`)))
   .catch((error) => { console.error(error); process.exit(1); });

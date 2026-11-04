@@ -1,6 +1,7 @@
 import { parentPort } from 'node:worker_threads';
 
 parentPort.on('message', (records) => {
+  if (!Array.isArray(records)) return;
   const byType = {};
   const byYear = {};
   for (const record of records) {

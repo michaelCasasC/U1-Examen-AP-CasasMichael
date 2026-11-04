@@ -1,19 +1,15 @@
-import sql from 'mssql';
+import pg from 'pg';
 
-const config = {
-  server: process.env.DB_SERVER || 'sqlserver',
-  port: Number(process.env.DB_PORT || 1433),
+const { Pool } = pg;
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB_NAME || 'primevideodb',
-  user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD,
-  options: { encrypt: false, trustServerCertificate: true },
-  pool: { max: 10, min: 1, idleTimeoutMillis: 30000 }
-};
+  user: process.env.DB_USER || 'primevideo_admin',
+  password: process.env.DB_PASSWORD
+});
 
-let connection;
-export const getPool = async () => {
-  if (!connection) connection = sql.connect(config).catch((error) => { connection = undefined; throw error; });
-  return connection;
+export const getPool = () => pool;
+export const checkDatabase = async () => {
+  await pool.query('SELECT 1');
 };
-export const checkDatabase = async () => { const pool = await getPool(); await pool.request().query('SELECT 1'); };
-export { sql };
